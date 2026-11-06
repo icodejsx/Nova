@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useIsCreator } from "@/app/hooks/useIsCreator";
+import { useAccount } from "@/app/hooks/useCredit";
 import { useWallet } from "@/app/providers";
 import { ConnectWallet } from "@/app/components/ConnectWallet";
 import { SiteHeader } from "@/app/components/SiteHeader";
@@ -49,13 +50,16 @@ function formatCloseLabel(isoLocal: string) {
 export default function CreatePage() {
   const { isConnected, address } = useWallet();
   const router = useRouter();
-  const { isCreator } = useIsCreator();
+  const { isCreator, isAdmin } = useIsCreator();
+  const { loaded } = useAccount();
 
   const [question, setQuestion] = useState("");
   const [category, setCategory] = useState<Category>("Crypto");
   const [endDate, setEndDate] = useState("");
   const [resolutionNotes, setResolutionNotes] = useState("");
-  const [isPrivate, setIsPrivate] = useState(false);
+  const [wantsPrivate, setWantsPrivate] = useState(false);
+  // Public markets are curated by the Nova team; everyone else creates private ones.
+  const isPrivate = wantsPrivate || !isAdmin;
   const [validationError, setValidationError] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -136,13 +140,15 @@ export default function CreatePage() {
     <main className="min-h-screen bg-background text-foreground">
       <SiteHeader />
 
-      {!isCreator ? (
+      {!loaded ? (
+        <div className="max-w-md mx-auto px-6 py-24" aria-busy />
+      ) : !isCreator ? (
         <div className="max-w-md mx-auto px-6 py-24 text-center">
-          <div className="text-lg mb-2">Creators only</div>
+          <div className="text-lg mb-2">Sign in to create a market</div>
           <p className="text-sm text-muted mb-6">
-            Market creation is restricted to authorized creators. Markets are
-            curated so every question has a clear, resolvable outcome. Connect
-            Freighter to create in demo mode.
+            Create private, invite-only markets for your friends or community.
+            Public markets are curated by the Nova team so every question has a
+            clear, resolvable outcome.
           </p>
           <div className="flex flex-col items-center gap-3">
             <ConnectWallet />
@@ -177,8 +183,8 @@ export default function CreatePage() {
 
           {isSuccess ? (
             <div className="rounded-2xl border border-yes/40 bg-yes-bg/40 p-8 text-center max-w-xl mx-auto">
-              <div className="font-mono-nums text-[10px] tracking-wider text-yes mb-2">
-                RECORDED ON TESTNET PATH
+              <div className="text-xs font-medium text-yes mb-2">
+                Market is live
               </div>
               <h2 className="text-xl font-semibold text-yes mb-2">
                 Market created
@@ -229,7 +235,7 @@ export default function CreatePage() {
                     setCreatedInvite(null);
                     setQuestion("");
                     setResolutionNotes("");
-                    setIsPrivate(false);
+                    setWantsPrivate(false);
                   }}
                   className="px-6 py-3 rounded-lg border border-border-strong text-sm text-dim hover:text-foreground transition-colors focus-ring"
                 >
@@ -288,7 +294,7 @@ export default function CreatePage() {
                           }`}
                         >
                           <span
-                            className={`inline-block text-[9px] font-semibold tracking-wide uppercase px-1.5 py-0.5 rounded border mb-1.5 ${CATEGORY_STYLES[c]}`}
+                            className={`inline-block text-xs px-1.5 py-0.5 rounded border mb-1.5 ${CATEGORY_STYLES[c]}`}
                           >
                             {c}
                           </span>
@@ -349,13 +355,22 @@ export default function CreatePage() {
                         Invite-only. Hidden from the public grid. Share a code
                         so friends or a syndicate can join and bet.
                       </p>
+                      {!isAdmin ? (
+                        <p className="text-[11px] text-accent mt-2 leading-relaxed max-w-md">
+                          Public markets are curated by the Nova team so every
+                          question has a trusted resolution. You can create
+                          private markets for your friends or community.
+                        </p>
+                      ) : null}
                     </div>
                     <button
                       type="button"
                       role="switch"
                       aria-checked={isPrivate}
-                      onClick={() => setIsPrivate((v) => !v)}
-                      className={`relative shrink-0 h-7 w-12 rounded-full border transition-colors focus-ring ${
+                      aria-disabled={!isAdmin}
+                      disabled={!isAdmin}
+                      onClick={() => setWantsPrivate((v) => !v)}
+                      className={`relative shrink-0 h-7 w-12 rounded-full border transition-colors focus-ring disabled:cursor-not-allowed disabled:opacity-70 ${
                         isPrivate
                           ? "bg-accent border-accent"
                           : "bg-white/5 border-border-strong"
@@ -387,14 +402,14 @@ export default function CreatePage() {
                     className={`${INPUT_CLASS} resize-none`}
                   />
                   <p className="text-xs text-muted mt-1.5">
-                    For your notes only — not written on-chain. Put critical
+                    For your notes only. Put critical
                     rules in the question itself.
                   </p>
                 </div>
 
                 <div className="rounded-xl border border-border-strong bg-background/60 px-4 py-3.5">
-                  <div className="font-mono-nums text-[10px] tracking-wider text-muted mb-2">
-                    HOW SETTLEMENT WORKS
+                  <div className="text-xs font-medium text-muted mb-2">
+                    How it settles
                   </div>
                   <ol className="space-y-1.5 text-xs text-dim list-decimal list-inside">
                     <li>
@@ -419,10 +434,10 @@ export default function CreatePage() {
                     className="w-full py-3.5 rounded-lg bg-accent hover:bg-accent-hover text-accent-fg text-[15px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-ring"
                   >
                     {isPending
-                      ? "Confirm in Freighter…"
+                      ? "Creating market…"
                       : isPrivate
                         ? "Create private market"
-                        : "Create market on Testnet"}
+                        : "Create market"}
                   </button>
                 )}
 
@@ -436,8 +451,8 @@ export default function CreatePage() {
               <aside className="lg:sticky lg:top-20 space-y-4">
                 <div className="rounded-2xl border border-border-subtle bg-surface overflow-hidden">
                   <div className="px-5 pt-4 pb-3 border-b border-border-subtle">
-                    <div className="font-mono-nums text-[10px] tracking-wider text-muted">
-                      LIVE PREVIEW
+                    <div className="text-xs font-medium text-muted">
+                      Preview
                     </div>
                   </div>
                   <div className="p-5">
@@ -452,7 +467,7 @@ export default function CreatePage() {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
                           <span
-                            className={`inline-block text-[9px] font-semibold tracking-wide uppercase px-1.5 py-0.5 rounded border ${CATEGORY_STYLES[category]}`}
+                            className={`inline-block text-xs px-1.5 py-0.5 rounded border ${CATEGORY_STYLES[category]}`}
                           >
                             {category}
                           </span>
@@ -497,9 +512,9 @@ export default function CreatePage() {
                         <dd className="text-dim">You (creator)</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-muted">Network</dt>
+                        <dt className="text-muted">Funding</dt>
                         <dd className="font-mono-nums text-dim">
-                          Stellar Testnet
+                          Roqqu · NGN / USDT / BTC
                         </dd>
                       </div>
                     </dl>
@@ -507,9 +522,9 @@ export default function CreatePage() {
                 </div>
 
                 <p className="text-[11px] text-muted leading-relaxed px-1">
-                  Creating registers a market id in the Nova Soroban registry
-                  (Option B). Private markets store an invite code and allowlist
-                  on-chain. Stake asset is USDC.
+                  Public markets are open to everyone. Private markets are
+                  invite-only and unlock with a code you share. Stakes are in
+                  USDC.
                 </p>
               </aside>
             </div>

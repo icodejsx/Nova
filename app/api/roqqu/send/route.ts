@@ -1,9 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { WithdrawNetwork } from "@/app/lib/roqqu/types";
 import { getSend, quoteSend, sendCoin } from "@/app/lib/roqqu/server";
+import { getAccount, refund, spend } from "@/app/lib/auth/accounts";
+import { getSessionEmail } from "@/app/lib/auth/session";
 
-/** Cash out: queue a USDT send via Roqqu `POST /wallets/send`. */
+/**
+ * Cash out: debit the signed-in user's balance, then queue a USDT send via
+ * Roqqu `POST /wallets/send`. If Roqqu rejects the send, the debit is returned.
+ */
 export async function POST(request: NextRequest) {
+  const email = await getSessionEmail();
+  if (!email || !getAccount(email)) {
+    return NextResponse.json({ error: "Sign in to cash out." }, { status: 401 });
+  }
+
   const body = (await request.json().catch(() => null)) as {
     amount?: number;
     network?: string;
@@ -11,13 +21,20 @@ export async function POST(request: NextRequest) {
   } | null;
 
   const network: WithdrawNetwork = body?.network === "bep20" ? "bep20" : "trc20";
-  const result = await sendCoin({
-    amount: Number(body?.amount),
-    network,
-    to: (body?.to ?? "").trim(),
-    token: "usdt",
+  const amount = Number(body?.amount);
+  const to = (body?.to ?? "").trim();
+
+  const debit = spend(email, amount, {
+    type: "withdraw",
+    label: `Cash out → ${network.toUpperCase()} ${to.slice(0, 6)}…`,
   });
+  if (!debit.ok) {
+    return NextResponse.json({ error: debit.error }, { status: 400 });
+  }
+
+  const result = await sendCoin({ amount, network, to, token: "usdt" });
   if (!result.ok) {
+    refund(email, amount, "Cash out refunded");
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
   return NextResponse.json(result.record);

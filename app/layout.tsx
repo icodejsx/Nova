@@ -16,13 +16,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nova — Prediction Markets on Stellar",
+  title: "Nova — Prediction Markets for Nigeria",
   description:
-    "Binary prediction markets on Stellar. Trade YES/NO with USDC.",
+    "Predict what happens next. Trade YES/NO on crypto, sports, politics and more — fund in naira with Roqqu.",
   openGraph: {
-    title: "Nova — Prediction Markets on Stellar",
+    title: "Nova — Prediction Markets for Nigeria",
     description:
-      "Binary prediction markets on Stellar. Trade YES/NO with USDC.",
+      "Predict what happens next. Trade YES/NO on crypto, sports, politics and more — fund in naira with Roqqu.",
   },
 };
 

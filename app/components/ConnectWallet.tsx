@@ -1,45 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useCredit } from "@/app/hooks/useCredit";
 import { useWallet } from "@/app/providers";
 
+/** "Sign in" when signed out; the balance (linking to the wallet page) when signed in. */
 export function ConnectWallet() {
-  const { address, isConnected, isPending, connect, disconnect, error } =
-    useWallet();
-  const [hint, setHint] = useState(false);
+  const { address, isConnected, isLoading } = useWallet();
+  const balance = useCredit();
+  const pathname = usePathname();
 
-  if (isConnected && address) {
+  if (isLoading) {
+    return <span className="inline-block h-[34px] w-24 rounded-lg animate-shimmer" aria-hidden />;
+  }
+
+  if (!isConnected) {
+    const next = pathname && pathname !== "/signin" ? `?next=${encodeURIComponent(pathname)}` : "";
     return (
-      <button
-        type="button"
-        onClick={() => disconnect()}
-        className="font-mono-nums text-[11px] px-3 py-1.5 rounded-lg border border-border-strong text-dim hover:text-foreground hover:border-muted transition-colors focus-ring"
+      <Link
+        href={`/signin${next}`}
+        className="inline-flex items-center text-sm px-4 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-accent-fg font-semibold transition-colors focus-ring"
       >
-        {address.slice(0, 4).toUpperCase()}…{address.slice(-4).toUpperCase()}
-      </button>
+        Sign in
+      </Link>
     );
   }
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={async () => {
-          setHint(false);
-          await connect();
-          setHint(true);
-        }}
-        disabled={isPending}
-        className="text-[11px] px-3.5 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-accent-fg font-semibold transition-colors disabled:opacity-50 focus-ring"
-      >
-        {isPending ? "Connecting…" : "Connect"}
-      </button>
-      {(error || hint) && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-xl border border-border-strong bg-surface p-3 text-[11px] text-muted shadow-xl">
-          {error ??
-            "Need Freighter? Install the browser extension and switch to Testnet."}
-        </div>
-      )}
-    </div>
+    <Link
+      href="/fund"
+      title={`Wallet ${address}`}
+      className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border border-border-strong hover:border-muted transition-colors focus-ring"
+    >
+      <span className="font-mono-nums font-semibold text-foreground">
+        ${balance.toFixed(2)}
+      </span>
+      <span className="text-accent">Add funds</span>
+    </Link>
   );
 }

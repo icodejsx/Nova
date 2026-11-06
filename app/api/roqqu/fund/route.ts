@@ -6,31 +6,34 @@ import {
   getPrices,
   newReference,
 } from "@/app/lib/roqqu/server";
+import { registerPayment } from "@/app/lib/auth/accounts";
+import { getSessionEmail } from "@/app/lib/auth/session";
 
 const MIN_USD = 1;
 const MAX_USD = 5_000;
 
 /** Create a Roqqu payment link that funds the user's Nova balance. */
 export async function POST(request: NextRequest) {
+  // The payment is owned by the signed-in user; their email identifies them to Roqqu.
+  const email = await getSessionEmail();
+  if (!email) {
+    return NextResponse.json({ error: "Sign in to add funds." }, { status: 401 });
+  }
+
   const body = (await request.json().catch(() => null)) as {
     amount?: number;
     currency?: string;
-    email?: string;
     firstName?: string;
     lastName?: string;
   } | null;
 
   const amount = Number(body?.amount);
   const currency: FundCurrency = body?.currency === "usd" ? "usd" : "ngn";
-  const email = (body?.email ?? "").trim();
   const firstName = (body?.firstName ?? "").trim() || "Nova";
   const lastName = (body?.lastName ?? "").trim() || "Trader";
 
   if (!Number.isFinite(amount) || amount <= 0) {
     return NextResponse.json({ error: "Enter an amount greater than zero." }, { status: 400 });
-  }
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    return NextResponse.json({ error: "Enter a valid email." }, { status: 400 });
   }
 
   const prices = await getPrices();
@@ -44,8 +47,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const reference = newReference();
+  registerPayment(reference, email);
   const session = await createPaymentLink({
-    reference: newReference(),
+    reference,
     amount,
     currency,
     creditUsd,

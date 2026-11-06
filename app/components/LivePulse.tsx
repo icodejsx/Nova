@@ -17,7 +17,7 @@ function timeAgo(ts: number) {
 
 function KindBadge({ kind }: { kind: PulseKind }) {
   return (
-    <span className="font-mono-nums text-[9px] uppercase tracking-wide text-muted">
+    <span className="text-xs text-muted">
       {kind === "news" ? "News" : "Market"}
     </span>
   );
@@ -29,21 +29,21 @@ function PulseCard({ item }: { item: PulseItem }) {
       <div className="flex items-center gap-2 mb-2">
         <KindBadge kind={item.kind} />
         <span
-          className={`text-[9px] font-medium uppercase px-1.5 py-0.5 rounded border ${CATEGORY_STYLES[item.category as Category]}`}
+          className={`text-[11px] px-1.5 py-0.5 rounded border ${CATEGORY_STYLES[item.category as Category]}`}
         >
           {item.category}
         </span>
-        <span className="ml-auto font-mono-nums text-[10px] text-muted">
+        <span className="ml-auto text-xs text-muted">
           {timeAgo(item.publishedAt)}
         </span>
       </div>
-      <p className="text-[13px] leading-snug text-foreground/90 line-clamp-3 group-hover:text-foreground transition-colors">
+      <p className="text-sm leading-snug text-foreground line-clamp-3">
         {item.title}
       </p>
       <div className="mt-3 flex items-center justify-between gap-2">
-        <span className="text-[10px] text-muted truncate">{item.source}</span>
+        <span className="text-xs text-muted truncate">{item.source}</span>
         {item.relatedMarketId && (
-          <span className="text-[10px] text-accent shrink-0">
+          <span className="text-xs text-accent shrink-0">
             {item.relatedLabel ?? "Open"} →
           </span>
         )}
@@ -52,7 +52,7 @@ function PulseCard({ item }: { item: PulseItem }) {
   );
 
   const className =
-    "group block min-w-[270px] max-w-[290px] snap-start rounded-xl border border-border-subtle bg-surface p-4 hover:border-border-strong hover:bg-surface-hover transition-all hover:-translate-y-0.5 focus-ring";
+    "group block min-w-[270px] max-w-[290px] snap-start rounded-xl border border-border-subtle bg-surface p-4 hover:border-border-strong transition-colors focus-ring";
 
   if (item.relatedMarketId) {
     return (
@@ -78,7 +78,6 @@ export function LivePulse() {
   const [tab, setTab] = useState<Tab>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -92,7 +91,6 @@ export function LivePulse() {
         };
         if (!active) return;
         setItems(data.items ?? []);
-        setUpdatedAt(data.updatedAt ?? Date.now());
         setError(null);
       } catch (e) {
         if (!active) return;
@@ -121,44 +119,25 @@ export function LivePulse() {
   ];
 
   return (
-    <section id="pulse" className="border-b border-border-subtle scroll-mt-20">
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-yes" />
-              <span className="font-mono-nums text-[10px] uppercase tracking-wider text-muted">
-                Live
-              </span>
-            </div>
-            <h2 className="text-lg font-semibold tracking-tight">News & activity</h2>
-            <p className="text-xs text-muted mt-1 max-w-md">
-              Headlines from the wire, plus odds moves on Nova.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-0.5 rounded-lg border border-border-strong p-0.5">
-              {tabs.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTab(t.id)}
-                  className={`text-[11px] px-2.5 py-1 rounded-md transition-colors focus-ring ${
-                    tab === t.id
-                      ? "bg-foreground text-background font-medium"
-                      : "text-dim hover:text-foreground"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            {updatedAt && (
-              <span className="font-mono-nums text-[10px] text-muted hidden sm:inline">
-                {timeAgo(updatedAt)} ago
-              </span>
-            )}
+    <section id="news" className="border-t border-border-subtle scroll-mt-20">
+      <div className="max-w-6xl mx-auto px-6 py-10">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+          <h2 className="text-lg font-semibold tracking-tight">In the news</h2>
+          <div className="flex items-center gap-0.5 rounded-lg border border-border-strong p-0.5">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className={`text-xs px-2.5 py-1 rounded-md transition-colors focus-ring ${
+                  tab === t.id
+                    ? "bg-foreground text-background font-medium"
+                    : "text-dim hover:text-foreground"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
         </div>
 

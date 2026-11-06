@@ -87,14 +87,14 @@ export function ResolvePanel({
             </>
           ) : (
             <div className="rounded-lg bg-yes-bg border border-yes/20 py-3 text-center text-xs text-yes">
-              Claim flow stubbed · wire after Testnet deploy
+              Market resolved · winners can claim their share
             </div>
           )}
         </>
       ) : isOwner ? (
         <>
-          <div className="font-mono-nums text-[10px] tracking-wider text-amber-400 mb-2">
-            OWNER ACTION REQUIRED
+          <div className="text-xs font-medium text-amber-400 mb-2">
+            Action required from you
           </div>
           <h2 className="text-sm font-medium mb-2">Resolve this market</h2>
           <p className="text-xs leading-relaxed text-muted mb-4">
@@ -125,8 +125,8 @@ export function ResolvePanel({
         </>
       ) : (
         <>
-          <div className="font-mono-nums text-[10px] tracking-wider text-amber-400 mb-2">
-            AWAITING RESOLUTION
+          <div className="text-xs font-medium text-amber-400 mb-2">
+            Awaiting result
           </div>
           <p className="text-xs leading-relaxed text-muted">
             Betting is closed. The market creator must submit the final outcome

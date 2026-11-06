@@ -12,7 +12,7 @@ function fmt(n: number) {
 /** Live Roqqu reference price for crypto markets (renders nothing otherwise). */
 export function LivePrice({
   question,
-  label = "Roqqu live",
+  label = "Roqqu price",
 }: {
   question: string;
   label?: string;
@@ -25,23 +25,15 @@ export function LivePrice({
 
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/5 px-2.5 py-1 font-mono-nums text-[10px] text-accent"
+      className="text-xs text-muted"
       title={
         prices.source === "mock"
           ? (prices.note ?? "Demo price")
           : "Live price via Roqqu API"
       }
     >
-      <span
-        className={`h-1.5 w-1.5 rounded-full ${
-          prices.source === "roqqu" ? "bg-yes" : "bg-muted"
-        }`}
-      />
-      {label} · {asset.label} ${fmt(usd)}
-      <span className="text-muted">
-        · ₦{fmt(usd * prices.ngnPerUsd)}
-      </span>
-      {prices.source === "mock" ? <span className="text-muted">· demo</span> : null}
+      {label}: {asset.label} <span className="font-mono-nums text-foreground">${fmt(usd)}</span>{" "}
+      (₦{fmt(usd * prices.ngnPerUsd)})
     </span>
   );
 }

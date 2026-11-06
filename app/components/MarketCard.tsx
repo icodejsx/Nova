@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Sparkline } from "./Sparkline";
 import { MarketThumb } from "./MarketThumb";
 import type { MarketData } from "@/app/hooks/useMarkets";
 import {
@@ -10,9 +9,7 @@ import {
   formatEndTime,
   formatTimeLeft,
   formatCompactVolume,
-  shortAddress,
 } from "@/app/lib/odds";
-import { CATEGORY_STYLES } from "@/app/lib/category";
 import { PrivateBadge } from "./PrivateBadge";
 
 export function MarketCard({ market }: { market: MarketData }) {
@@ -23,127 +20,77 @@ export function MarketCard({ market }: { market: MarketData }) {
   // eslint-disable-next-line react-hooks/purity
   const nowSec = BigInt(Math.floor(Date.now() / 1000));
   const ended = market.endTime <= nowSec;
-  const category = market.category;
-
-  const closingSoon =
-    !ended && !market.resolved && market.endTime - nowSec < BigInt(86400);
 
   return (
     <div
-      className={`
-        group relative bg-surface border border-border-subtle rounded-xl
-        h-full flex flex-col overflow-hidden
-        transition-all duration-200
-        hover:border-border-strong hover:bg-surface-hover hover:-translate-y-0.5
-        hover:shadow-[0_12px_32px_-16px_rgba(0,0,0,0.65)]
-        ${market.resolved ? "opacity-70 hover:opacity-100" : ""}
-      `}
+      className={`h-full flex flex-col rounded-xl border border-border-subtle bg-surface p-4 transition-colors hover:border-border-strong ${
+        market.resolved ? "opacity-70 hover:opacity-100" : ""
+      }`}
     >
-      <div className="absolute inset-x-0 top-0 h-0.5 bg-no/30">
-        <div
-          className="h-full bg-yes transition-all duration-500"
-          style={{ width: `${yesPercent}%` }}
-        />
+      <div className="flex items-center gap-2 mb-3 text-xs text-muted">
+        <span>{market.category}</span>
+        {market.isPrivate ? <PrivateBadge /> : null}
+        <span className="ml-auto">
+          {market.resolved
+            ? formatEndTime(market.endTime)
+            : formatTimeLeft(market.endTime, nowSec)}
+        </span>
       </div>
 
-      <div className="p-4 pt-4.5 flex flex-col h-full">
-        <div className="flex items-center gap-2 mb-3">
-          <span
-            className={`text-[9px] font-semibold tracking-wide uppercase px-1.5 py-0.5 rounded border ${CATEGORY_STYLES[category]}`}
-          >
-            {category}
-          </span>
-          {market.isPrivate ? <PrivateBadge /> : null}
-
-          {market.resolved ? (
-            <span className="font-mono-nums text-[9px] uppercase tracking-wide text-muted">
-              Settled
-            </span>
-          ) : closingSoon ? (
-            <span className="font-mono-nums text-[9px] uppercase tracking-wide text-accent">
-              Closing soon
-            </span>
-          ) : null}
-
-          <span className="ml-auto font-mono-nums text-[9px] text-muted whitespace-nowrap">
-            {market.resolved
-              ? formatEndTime(market.endTime)
-              : formatTimeLeft(market.endTime, nowSec)}
-          </span>
+      <Link
+        href={`/market/${market.id}`}
+        className="flex gap-3 items-start rounded-lg focus-ring"
+      >
+        <MarketThumb
+          address={market.id}
+          question={market.question}
+          category={market.category}
+        />
+        <div className="text-[15px] font-medium leading-snug text-foreground min-h-[3.25rem] line-clamp-3">
+          {market.question}
         </div>
+      </Link>
 
-        <Link
-          href={`/market/${market.id}`}
-          className="flex gap-3 items-start mb-3.5 rounded-lg focus-ring"
+      <div className="mt-4 mb-3 flex items-baseline gap-2">
+        <span className="font-mono-nums text-3xl font-semibold text-foreground">
+          {yesPercent}%
+        </span>
+        <span className="text-xs text-muted">chance of yes</span>
+      </div>
+
+      {market.resolved ? (
+        <div
+          className={`text-center py-2.5 text-sm font-medium rounded-lg ${
+            market.outcome ? "bg-yes-bg text-yes" : "bg-no-bg text-no"
+          }`}
         >
-          <div className="transition-transform duration-200 group-hover:scale-105">
-            <MarketThumb
-              address={market.id}
-              question={market.question}
-              category={category}
-            />
-          </div>
-          <div className="text-[13px] font-medium leading-snug text-foreground/90 min-h-9 line-clamp-3 group-hover:text-foreground transition-colors">
-            {market.question}
-          </div>
-        </Link>
-
-        <div className="flex items-end justify-between gap-3 mb-3">
-          <div className="leading-none">
-            <div className="font-mono-nums text-[1.65rem] font-semibold text-yes tracking-tight">
-              {yesPercent}%
-            </div>
-            <div className="text-[9px] text-muted mt-1.5 uppercase tracking-wide">
-              chance yes
-            </div>
-          </div>
-          <div className="flex-1 max-w-28 opacity-70 group-hover:opacity-100 transition-opacity">
-            <Sparkline marketId={market.id} currentYesPercent={yesPercent} />
-          </div>
+          {market.outcome ? "Resolved: Yes" : "Resolved: No"}
         </div>
-
-        {market.resolved ? (
-          <div
-            className={`font-mono-nums text-center py-2 text-[11px] rounded-lg border ${
-              market.outcome
-                ? "bg-yes-bg border-yes/25 text-yes"
-                : "bg-no-bg border-no/25 text-no"
-            }`}
-          >
-            {market.outcome ? "YES WON" : "NO WON"}
-          </div>
-        ) : ended ? (
-          <div className="font-mono-nums text-center py-2 text-[10px] uppercase tracking-wide rounded-lg border border-border-strong text-muted">
-            Awaiting resolution
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-1.5">
-            <Link
-              href={`/market/${market.id}?side=yes`}
-              aria-label={`Buy yes at ${yesPercent} cents`}
-              className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-yes-bg border border-yes/25 text-yes text-[11px] font-semibold hover:bg-yes hover:border-yes hover:text-white active:scale-[0.98] transition-all focus-ring"
-            >
-              Yes <span className="font-mono-nums">{yesPercent}¢</span>
-            </Link>
-            <Link
-              href={`/market/${market.id}?side=no`}
-              aria-label={`Buy no at ${noPercent} cents`}
-              className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-no-bg border border-no/25 text-no text-[11px] font-semibold hover:bg-no hover:border-no hover:text-white active:scale-[0.98] transition-all focus-ring"
-            >
-              No <span className="font-mono-nums">{noPercent}¢</span>
-            </Link>
-          </div>
-        )}
-
-        <div className="mt-auto pt-3 flex items-center justify-between font-mono-nums text-[9px] text-muted">
-          <span>{formatCompactVolume(volume)} USDC VOL.</span>
-          <span
-            className="truncate max-w-28 hover:text-dim transition-colors"
-            title={market.creator}
-          >
-            {shortAddress(market.creator)}
-          </span>
+      ) : ended ? (
+        <div className="text-center py-2.5 text-sm rounded-lg border border-border-strong text-muted">
+          Waiting for result
         </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <Link
+            href={`/market/${market.id}?side=yes`}
+            aria-label={`Buy yes at ${yesPercent} cents`}
+            className="py-2.5 text-center rounded-lg bg-yes-bg text-yes text-sm font-semibold hover:bg-yes hover:text-white transition-colors focus-ring"
+          >
+            Yes {yesPercent}¢
+          </Link>
+          <Link
+            href={`/market/${market.id}?side=no`}
+            aria-label={`Buy no at ${noPercent} cents`}
+            className="py-2.5 text-center rounded-lg bg-no-bg text-no text-sm font-semibold hover:bg-no hover:text-white transition-colors focus-ring"
+          >
+            No {noPercent}¢
+          </Link>
+        </div>
+      )}
+
+      <div className="mt-auto pt-3 text-xs text-muted">
+        {formatCompactVolume(volume)} USDC traded
       </div>
     </div>
   );

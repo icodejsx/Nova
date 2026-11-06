@@ -2,26 +2,28 @@
 
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from "react";
-import {
-  isConnected as freighterIsConnected,
-  requestAccess,
-  getAddress,
-} from "@stellar/freighter-api";
+import { useAccount } from "@/app/hooks/useCredit";
+import { refreshAccount, signOut } from "@/app/lib/account-client";
 
+/**
+ * Nova's wallet is a Roqqu-backed account. Users sign in with their Roqqu
+ * email (one-time code); the server keeps their wallet ID, balance and
+ * activity, so they come back to the same account on any device.
+ */
 interface WalletState {
-  address: string | null;
+  /** Roqqu wallet ID (empty when signed out or still loading). */
+  address: string;
+  email: string;
+  /** True when signed in. */
   isConnected: boolean;
-  isPending: boolean;
-  error: string | null;
-  connect: () => Promise<void>;
-  disconnect: () => void;
+  /** True until the first account check finishes. */
+  isLoading: boolean;
+  signOut: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletState | null>(null);
@@ -31,67 +33,21 @@ export function Providers({ children }: { children: ReactNode }) {
 }
 
 function WalletProvider({ children }: { children: ReactNode }) {
-  const [address, setAddress] = useState<string | null>(null);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const account = useAccount();
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const connected = await freighterIsConnected();
-        if (!connected.isConnected || cancelled) return;
-        const { address: addr } = await getAddress();
-        if (!cancelled && addr) setAddress(addr);
-      } catch {
-        // Freighter not installed — fine for demo browsing
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    void refreshAccount();
   }, []);
 
-  const connect = useCallback(async () => {
-    setIsPending(true);
-    setError(null);
-    try {
-      const access = await requestAccess();
-      if (access.error) {
-        setError(
-          typeof access.error === "string"
-            ? access.error
-            : access.error.message ?? "Freighter access denied"
-        );
-        return;
-      }
-      if (access.address) setAddress(access.address);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Install Freighter to connect on Stellar Testnet."
-      );
-    } finally {
-      setIsPending(false);
-    }
-  }, []);
-
-  const disconnect = useCallback(() => {
-    setAddress(null);
-    setError(null);
-  }, []);
-
-  const value = useMemo(
+  const value = useMemo<WalletState>(
     () => ({
-      address,
-      isConnected: !!address,
-      isPending,
-      error,
-      connect,
-      disconnect,
+      address: account.walletId,
+      email: account.email,
+      isConnected: account.signedIn,
+      isLoading: !account.loaded,
+      signOut,
     }),
-    [address, isPending, error, connect, disconnect]
+    [account.walletId, account.email, account.signedIn, account.loaded]
   );
 
   return (

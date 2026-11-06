@@ -12,6 +12,7 @@
  *   NEXT_PUBLIC_APP_URL      public https origin (used for payment-link redirects)
  */
 import crypto from "node:crypto";
+import { creditPayment } from "@/app/lib/auth/accounts";
 import type {
   FundSession,
   FundStatus,
@@ -381,6 +382,8 @@ export function applyPaymentEvent(event: PaymentLinkEvent): boolean {
     } else {
       setPaymentStatus(ref, "completed", credit);
     }
+    // Credit the account that owns this payment (idempotent per reference).
+    creditPayment(ref, credit);
     return true;
   }
   return false;

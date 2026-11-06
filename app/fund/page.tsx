@@ -4,9 +4,9 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { SiteHeader } from "@/app/components/SiteHeader";
-import { useCreditState } from "@/app/hooks/useCredit";
+import { useAccount } from "@/app/hooks/useCredit";
 import { useRoqquPrices } from "@/app/hooks/useRoqquPrices";
-import { creditPayment, spendCredit } from "@/app/lib/roqqu/credit";
+import { refreshAccount, signOut } from "@/app/lib/account-client";
 import type {
   FundCurrency,
   FundSession,
@@ -83,11 +83,8 @@ function WithdrawCard({ balance }: { balance: number }) {
         return;
       }
       const rec = json as WithdrawRecord;
-      // Debit only after Roqqu accepted the send into its queue.
-      spendCredit(numeric, {
-        type: "withdraw",
-        label: `Cash out → ${rec.network.toUpperCase()} ${rec.to.slice(0, 6)}…`,
-      });
+      // The server already debited the balance; pull the new balance and ledger.
+      void refreshAccount();
       setRecord(rec);
       stop();
       pollRef.current = window.setInterval(async () => {
@@ -114,8 +111,8 @@ function WithdrawCard({ balance }: { balance: number }) {
     <div className="rounded-2xl border border-border-subtle bg-surface p-6 sm:p-7">
       <div className="flex items-start justify-between gap-3 mb-5">
         <div>
-          <div className="font-mono-nums text-[10px] tracking-widest text-accent mb-1">
-            CASH OUT
+          <div className="text-xs font-medium text-accent mb-1">
+            Cash out
           </div>
           <h2 className="text-lg font-semibold tracking-tight">
             Withdraw winnings in USDT
@@ -155,7 +152,7 @@ function WithdrawCard({ balance }: { balance: number }) {
           </dl>
           {record.status === "queued" ? (
             <p className="text-[11px] text-muted">
-              Waiting for on-chain confirmation (Roqqu&apos;s{" "}
+              Waiting for network confirmation (Roqqu&apos;s{" "}
               <span className="font-mono-nums">token_sent</span> webhook)…
             </p>
           ) : null}
@@ -256,13 +253,19 @@ function Row({ k, v }: { k: string; v: string }) {
 /* ------------------------------------------------------------------ */
 
 function FundContent() {
-  const { balance: credit, entries } = useCreditState();
+  const {
+    balance: credit,
+    entries,
+    walletId,
+    email,
+    signedIn,
+    loaded,
+  } = useAccount();
   const prices = useRoqquPrices();
   const searchParams = useSearchParams();
 
   const [currency, setCurrency] = useState<FundCurrency>("ngn");
   const [amount, setAmount] = useState("15000");
-  const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [session, setSession] = useState<FundSession | null>(null);
@@ -293,7 +296,8 @@ function FundContent() {
         const next = (await res.json()) as FundSession;
         if (next.status === "completed") {
           stopPolling();
-          creditPayment(reference, next.creditUsd);
+          // Roqqu's webhook credited the account on the server; pull the new balance.
+          void refreshAccount();
           setSession(next);
         } else if (next.status === "failed") {
           stopPolling();
@@ -340,7 +344,7 @@ function FundContent() {
       const res = await fetch("/api/roqqu/fund", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: numeric, currency, email, firstName, lastName }),
+        body: JSON.stringify({ amount: numeric, currency, firstName, lastName }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -364,9 +368,31 @@ function FundContent() {
     }
   }
 
-  const canSubmit =
-    quoteUsd >= 1 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && !busy;
+  const canSubmit = quoteUsd >= 1 && !busy;
   const completed = session?.status === "completed";
+
+  if (!loaded) {
+    return <div className="max-w-5xl mx-auto px-6 py-24" aria-busy />;
+  }
+  if (!signedIn) {
+    return (
+      <div className="max-w-md mx-auto px-6 py-24 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight mb-2">
+          Sign in to your Roqqu wallet
+        </h1>
+        <p className="text-sm text-muted mb-6 leading-relaxed">
+          Your balance and activity are saved to your account, so you can pick
+          up where you left off on any device.
+        </p>
+        <Link
+          href="/signin?next=/fund"
+          className="inline-block px-6 py-3 rounded-lg bg-accent hover:bg-accent-hover text-accent-fg text-sm font-semibold transition-colors focus-ring"
+        >
+          Sign in with your email
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 pb-24">
@@ -376,11 +402,8 @@ function FundContent() {
 
       <div className="mt-5 mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="font-mono-nums text-[10px] tracking-widest text-accent mb-2">
-            POWERED BY ROQQU
-          </div>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-            Your Nova balance
+            Your Roqqu wallet
           </h1>
           <p className="text-sm text-muted mt-2 max-w-xl leading-relaxed">
             Add money with naira, USDT or Bitcoin through a Roqqu payment link.
@@ -389,10 +412,20 @@ function FundContent() {
           </p>
         </div>
         <div className="rounded-xl border border-border-subtle bg-surface px-5 py-3 text-right">
-          <div className="font-mono-nums text-[10px] text-muted tracking-wider">NOVA BALANCE</div>
+          <div className="text-xs text-muted">Wallet balance</div>
           <div className="font-mono-nums text-2xl font-semibold text-accent">
             ${money(credit)}
           </div>
+          <div className="font-mono-nums text-xs text-muted mt-1">
+            Wallet ID {walletId}
+          </div>
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="mt-1 text-[10px] text-muted hover:text-foreground underline underline-offset-2 rounded focus-ring"
+          >
+            Sign out
+          </button>
         </div>
       </div>
 
@@ -401,8 +434,8 @@ function FundContent() {
           <div className="rounded-2xl border border-border-subtle bg-surface p-6 sm:p-7 grid gap-6">
             {completed ? (
               <div className="rounded-xl border border-yes/40 bg-yes-bg/40 p-6 text-center">
-                <div className="font-mono-nums text-[10px] tracking-wider text-yes mb-2">
-                  PAYMENT CONFIRMED BY ROQQU
+                <div className="text-xs font-medium text-yes mb-2">
+                  Payment confirmed by Roqqu
                 </div>
                 <h2 className="text-xl font-semibold text-yes mb-1">
                   +${money(session?.creditUsd ?? 0)} added
@@ -428,8 +461,8 @@ function FundContent() {
               </div>
             ) : session ? (
               <div className="rounded-xl border border-accent/30 bg-accent/5 p-6">
-                <div className="font-mono-nums text-[10px] tracking-wider text-accent mb-2">
-                  {session.status === "failed" ? "PAYMENT FAILED" : "WAITING FOR PAYMENT"}
+                <div className="text-xs font-medium text-accent mb-2">
+                  {session.status === "failed" ? "Payment failed" : "Waiting for payment"}
                 </div>
                 <p className="text-sm text-dim mb-1">
                   {session.currency === "ngn" ? "₦" : "$"}
@@ -518,18 +551,9 @@ function FundContent() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-3">
-                  <div className="sm:col-span-2">
-                    <label htmlFor="fund-email" className="block text-[13px] font-medium text-foreground/80 mb-2">
-                      Email
-                    </label>
-                    <input
-                      id="fund-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className={INPUT}
-                    />
+                  <div className="sm:col-span-2 rounded-lg border border-border-subtle bg-background/60 px-3.5 py-3 text-[13px] text-muted">
+                    Paying as{" "}
+                    <span className="text-foreground font-medium">{email}</span>
                   </div>
                   <input
                     aria-label="First name"
@@ -570,8 +594,8 @@ function FundContent() {
         <aside className="space-y-4 lg:sticky lg:top-20">
           <div className="rounded-2xl border border-border-subtle bg-surface overflow-hidden">
             <div className="px-5 pt-4 pb-3 border-b border-border-subtle">
-              <div className="font-mono-nums text-[10px] tracking-wider text-muted">
-                YOUR ACTIVITY
+              <div className="text-xs font-medium text-muted">
+                Your activity
               </div>
             </div>
             <div className="p-5">
@@ -603,8 +627,8 @@ function FundContent() {
 
           <div className="rounded-2xl border border-border-subtle bg-surface overflow-hidden">
             <div className="px-5 pt-4 pb-3 border-b border-border-subtle flex items-center justify-between">
-              <div className="font-mono-nums text-[10px] tracking-wider text-muted">
-                ROQQU TREASURY WALLET
+              <div className="text-xs font-medium text-muted">
+                Roqqu treasury wallet
               </div>
               {wallet ? (
                 <span className="font-mono-nums text-[9px] text-muted">
@@ -656,8 +680,8 @@ function FundContent() {
           </div>
 
           <div className="rounded-2xl border border-border-subtle bg-surface p-5">
-            <div className="font-mono-nums text-[10px] tracking-wider text-muted mb-3">
-              HOW IT WORKS
+            <div className="text-xs font-medium text-muted mb-3">
+              How it works
             </div>
             <ol className="space-y-2 text-xs text-dim list-decimal list-inside">
               <li>Nova creates a Roqqu payment link</li>

@@ -77,7 +77,7 @@ export function inferCategory(question: string): Category {
     return "Pop Culture";
   }
   if (
-    /\b(stock|stocks|shares|index|s&p|gold|revenue|refinery|valued|valuation|ipo|inflation|rate|rates|gdp|earnings|nasdaq|fed|bank of england)\b/.test(
+    /\b(stock|stocks|shares|index|s&p|gold|revenue|refinery|valued|valuation|ipo|inflation|naira|cbn|rate|rates|gdp|earnings|nasdaq|fed|bank of england)\b/.test(
       q
     ) ||
     /\$\d/.test(q)

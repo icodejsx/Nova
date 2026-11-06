@@ -21,7 +21,7 @@ export function InviteGate({
 
   function submit() {
     if (!address) {
-      setError("Connect Freighter first.");
+      setError("Wallet is still loading — try again.");
       return;
     }
     setPending(true);

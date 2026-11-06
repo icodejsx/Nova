@@ -7,14 +7,35 @@ import {
   formatTimeLeft,
   getVolume,
   getYesPercent,
-  shortAddress,
 } from "@/app/lib/odds";
-import { formatUsdc } from "@/app/lib/types";
+import { toUsdcNumber } from "@/app/lib/types";
 
-/**
- * Homepage overview: platform stats, movers, settlements, how it works.
- * Complements featured + news + market grid.
- */
+const STEPS = [
+  {
+    title: "Pick YES or NO",
+    text: "Stake while the market is open. The price moves with the crowd.",
+  },
+  {
+    title: "Trading closes",
+    text: "At the close time no new trades are accepted. Positions wait for the result.",
+  },
+  {
+    title: "Result is posted",
+    text: "Nova (or the creator, for private markets) submits the final YES or NO.",
+  },
+  {
+    title: "Winners cash out",
+    text: "Winners share the losing pool. A 2% fee is taken from the payout.",
+  },
+];
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-lg font-semibold tracking-tight mb-5">{children}</h2>
+  );
+}
+
+/** Platform stats, top markets, recent results and how settlement works. */
 export function HomeOverview({ markets }: { markets: MarketData[] }) {
   // eslint-disable-next-line react-hooks/purity
   const nowSec = BigInt(Math.floor(Date.now() / 1000));
@@ -45,70 +66,51 @@ export function HomeOverview({ markets }: { markets: MarketData[] }) {
     )
     .slice(0, 4);
 
-  const recentSettled = markets
-    .filter((m) => m.resolved)
-    .slice(0, 3);
+  const recentSettled = markets.filter((m) => m.resolved).slice(0, 4);
 
   const stats = [
     {
-      label: "Total volume",
-      value: `${formatUsdc(totalVolume, 0)}`,
+      label: "Total traded",
+      value: Math.round(toUsdcNumber(totalVolume)).toLocaleString("en-US"),
       unit: "USDC",
       accent: true,
     },
-    { label: "Live markets", value: String(live), unit: "open" },
-    { label: "Closing soon", value: String(closingSoon), unit: "< 3d" },
-    { label: "Awaiting resolve", value: String(awaiting), unit: "locked" },
-    { label: "Settled", value: String(settled), unit: "done" },
+    { label: "Live markets", value: String(live), unit: "open now" },
+    { label: "Closing soon", value: String(closingSoon), unit: "within 3 days" },
+    { label: "Awaiting result", value: String(awaiting), unit: "trading closed" },
+    { label: "Settled", value: String(settled), unit: "paid out" },
   ];
 
   return (
-    <section id="overview" className="border-b border-border-subtle scroll-mt-20">
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        {/* Stats */}
+    <section className="border-b border-border-subtle">
+      <div className="max-w-6xl mx-auto px-6 py-14 space-y-14">
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="h-1 w-1 rounded-full bg-accent" />
-            <h2 className="text-sm font-semibold tracking-tight">
-              Platform snapshot
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+          <SectionTitle>Platform snapshot</SectionTitle>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {stats.map((s) => (
-              <div
-                key={s.label}
-                className="panel rounded-xl px-3.5 py-3.5"
-              >
-                <div className="text-[10px] uppercase tracking-wide text-muted mb-2">
-                  {s.label}
-                </div>
+              <div key={s.label} className="panel rounded-xl p-5">
+                <div className="text-sm text-muted mb-3">{s.label}</div>
                 <div
-                  className={`font-mono-nums text-xl font-semibold leading-none ${
+                  className={`font-mono-nums text-3xl font-semibold leading-none ${
                     s.accent ? "text-accent" : "text-foreground"
                   }`}
                 >
                   {s.value}
                 </div>
-                <div className="font-mono-nums text-[10px] text-muted mt-1.5">
-                  {s.unit}
-                </div>
+                <div className="text-xs text-muted mt-3">{s.unit}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Top volume */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="panel rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
-              <h3 className="text-sm font-semibold">Top by volume</h3>
-              <span className="font-mono-nums text-[10px] text-muted">
-                LIVE
-              </span>
+            <div className="px-6 py-5 border-b border-border-subtle">
+              <h3 className="text-base font-semibold">Top by volume</h3>
             </div>
             <ul className="divide-y divide-border-subtle">
               {movers.length === 0 ? (
-                <li className="px-4 py-6 text-xs text-muted">No live markets</li>
+                <li className="px-6 py-8 text-sm text-muted">No live markets</li>
               ) : (
                 movers.map((m) => {
                   const yes = getYesPercent(m.totalYes, m.totalNo);
@@ -117,21 +119,23 @@ export function HomeOverview({ markets }: { markets: MarketData[] }) {
                     <li key={m.id}>
                       <Link
                         href={`/market/${m.id}`}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors focus-ring"
+                        className="flex items-center gap-4 px-6 py-4 hover:bg-surface-hover transition-colors focus-ring"
                       >
-                        <div className="font-mono-nums text-sm font-semibold text-yes w-12 shrink-0">
+                        <div className="font-mono-nums text-base font-semibold text-yes w-12 shrink-0">
                           {yes}%
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-[13px] leading-snug line-clamp-1">
+                          <div className="text-sm leading-snug line-clamp-1">
                             {m.question}
                           </div>
-                          <div className="font-mono-nums text-[10px] text-muted mt-0.5">
+                          <div className="text-xs text-muted mt-1.5">
                             {formatTimeLeft(m.endTime, nowSec)} ·{" "}
                             {formatCompactVolume(vol)} USDC
                           </div>
                         </div>
-                        <span className="text-accent text-xs shrink-0">→</span>
+                        <span className="text-muted shrink-0" aria-hidden>
+                          →
+                        </span>
                       </Link>
                     </li>
                   );
@@ -140,17 +144,13 @@ export function HomeOverview({ markets }: { markets: MarketData[] }) {
             </ul>
           </div>
 
-          {/* Settlements */}
           <div className="panel rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
-              <h3 className="text-sm font-semibold">Recent settlements</h3>
-              <span className="font-mono-nums text-[10px] text-muted">
-                RESOLVED
-              </span>
+            <div className="px-6 py-5 border-b border-border-subtle">
+              <h3 className="text-base font-semibold">Recent results</h3>
             </div>
             <ul className="divide-y divide-border-subtle">
               {recentSettled.length === 0 ? (
-                <li className="px-4 py-6 text-xs text-muted">
+                <li className="px-6 py-8 text-sm text-muted">
                   No settled markets yet
                 </li>
               ) : (
@@ -158,24 +158,17 @@ export function HomeOverview({ markets }: { markets: MarketData[] }) {
                   <li key={m.id}>
                     <Link
                       href={`/market/${m.id}`}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors focus-ring"
+                      className="flex items-center gap-4 px-6 py-4 hover:bg-surface-hover transition-colors focus-ring"
                     >
                       <span
-                        className={`font-mono-nums text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                          m.outcome
-                            ? "text-yes bg-yes-bg"
-                            : "text-no bg-no-bg"
+                        className={`w-12 shrink-0 text-center text-xs font-semibold py-1 rounded ${
+                          m.outcome ? "text-yes bg-yes-bg" : "text-no bg-no-bg"
                         }`}
                       >
                         {m.outcome ? "YES" : "NO"}
                       </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[13px] leading-snug line-clamp-1">
-                          {m.question}
-                        </div>
-                        <div className="font-mono-nums text-[10px] text-muted mt-0.5">
-                          {shortAddress(m.creator)} resolved
-                        </div>
+                      <div className="min-w-0 flex-1 text-sm leading-snug line-clamp-2">
+                        {m.question}
                       </div>
                     </Link>
                   </li>
@@ -185,45 +178,16 @@ export function HomeOverview({ markets }: { markets: MarketData[] }) {
           </div>
         </div>
 
-        {/* How it works */}
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="h-1 w-1 rounded-full bg-accent" />
-            <h2 className="text-sm font-semibold tracking-tight">
-              How settlement works
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-            {[
-              {
-                n: "01",
-                title: "Bet YES or NO",
-                text: "Stake USDC while the market is open. Odds follow the pool.",
-              },
-              {
-                n: "02",
-                title: "Betting locks",
-                text: "When the close time hits, no new bets. Positions wait.",
-              },
-              {
-                n: "03",
-                title: "Creator resolves",
-                text: "The market creator submits the final YES or NO on-chain.",
-              },
-              {
-                n: "04",
-                title: "Winners claim",
-                text: "Share the losing pool. A 2% fee is taken on payout.",
-              },
-            ].map((step) => (
-              <div key={step.n} className="panel rounded-xl px-4 py-4">
-                <div className="font-mono-nums text-[10px] text-accent mb-2">
-                  {step.n}
+          <SectionTitle>How settlement works</SectionTitle>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {STEPS.map((step, i) => (
+              <div key={step.title} className="panel rounded-xl p-6">
+                <div className="font-mono-nums text-sm text-accent mb-4">
+                  {i + 1}
                 </div>
-                <div className="text-sm font-medium mb-1.5">{step.title}</div>
-                <p className="text-[11px] leading-relaxed text-muted">
-                  {step.text}
-                </p>
+                <div className="text-base font-medium mb-2">{step.title}</div>
+                <p className="text-sm leading-relaxed text-muted">{step.text}</p>
               </div>
             ))}
           </div>

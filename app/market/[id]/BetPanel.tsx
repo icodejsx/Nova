@@ -4,9 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ConnectWallet } from "@/app/components/ConnectWallet";
-import { useWallet } from "@/app/providers";
 import { useCredit } from "@/app/hooks/useCredit";
-import { spendCredit } from "@/app/lib/roqqu/credit";
+import { useWallet } from "@/app/providers";
+import { spendCredit } from "@/app/lib/account-client";
 import { previewNetPayout } from "@/app/lib/odds";
 import { formatUsdc, toUsdcNumber } from "@/app/lib/types";
 
@@ -29,8 +29,8 @@ export function BetPanel({
   totalNo: bigint;
   onBetPlaced: () => void;
 }) {
-  const { isConnected } = useWallet();
   const credit = useCredit();
+  const { isConnected } = useWallet();
   const searchParams = useSearchParams();
   const [side, setSide] = useState<"yes" | "no">(
     searchParams.get("side") === "no" ? "no" : "yes"
@@ -57,31 +57,25 @@ export function BetPanel({
     return net.toFixed(2);
   }
 
-  function placeBet() {
+  async function placeBet() {
     if (!amountIsValid) {
       setValidationError("Enter a valid USDC amount greater than zero.");
       return;
     }
-    // Stake comes from the Nova balance funded through Roqqu.
-    if (
-      !spendCredit(numericAmount, {
-        type: "bet",
-        label: `${side.toUpperCase()} · market #${marketId}`,
-      })
-    ) {
-      setValidationError(
-        `Insufficient Nova balance ($${credit.toFixed(2)}). Add funds with Roqqu to trade.`
-      );
+    setValidationError("");
+    setStatus("pending");
+    // The stake is debited on the server from the balance funded through Roqqu.
+    const result = await spendCredit(
+      numericAmount,
+      `${side.toUpperCase()} · market #${marketId}`
+    );
+    if (!result.ok) {
+      setStatus("idle");
+      setValidationError(result.error);
       return;
     }
-    setValidationError("");
-    // Scaffold: on-chain bet via Freighter + registry.bet lands after deploy.
-    void marketId;
-    setStatus("pending");
-    window.setTimeout(() => {
-      setStatus("done");
-      onBetPlaced();
-    }, 600);
+    setStatus("done");
+    onBetPlaced();
   }
 
   const busy = status === "pending";
@@ -214,18 +208,23 @@ export function BetPanel({
             Betting closed · awaiting resolution
           </div>
         ) : !isConnected ? (
-          <ConnectWallet />
+          <div className="space-y-2 text-center">
+            <ConnectWallet />
+            <p className="text-[11px] text-muted">
+              Sign in with your Roqqu email to trade.
+            </p>
+          </div>
         ) : (
           <button
             type="button"
-            onClick={placeBet}
+            onClick={() => void placeBet()}
             disabled={busy || !amountIsValid}
             className={`w-full py-3 rounded-lg text-[13px] font-semibold transition-all focus-ring active:scale-[0.99] ${
               side === "yes" ? "bg-yes hover:bg-yes/90" : "bg-no hover:bg-no/90"
             } text-white disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {busy
-              ? "Confirm in Freighter…"
+              ? "Placing trade…"
               : `Buy ${side.toUpperCase()} · ${amount || "0"} USDC`}
           </button>
         )}
@@ -233,7 +232,7 @@ export function BetPanel({
         <div aria-live="polite">
           {status === "done" && (
             <div className="text-center text-[11px] text-yes mt-3">
-              Demo trade recorded (wire Soroban after deploy)
+              Trade placed — paid from your Nova balance
             </div>
           )}
           {validationError && (
@@ -245,19 +244,13 @@ export function BetPanel({
       </div>
 
       <div className="p-5">
-        <div className="font-mono-nums text-[10px] tracking-wider text-muted mb-3">
-          YOUR POSITION
+        <div className="text-xs font-medium text-muted mb-3">
+          Your position
         </div>
-        {!isConnected ? (
-          <p className="text-[11px] text-muted">
-            Connect Freighter to view your positions.
-          </p>
-        ) : (
-          <p className="text-[11px] text-muted">
-            No on-chain position yet · pools show{" "}
-            {formatUsdc(totalYes, 2)} / {formatUsdc(totalNo, 2)} USDC
-          </p>
-        )}
+        <p className="text-[11px] text-muted">
+          No position yet · pools show {formatUsdc(totalYes, 2)} /{" "}
+          {formatUsdc(totalNo, 2)} USDC
+        </p>
       </div>
     </section>
   );

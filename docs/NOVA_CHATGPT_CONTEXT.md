@@ -144,7 +144,7 @@ Private / invite-only markets:
 
 ### Demo mode
 - If `NEXT_PUBLIC_CONTRACT_ID` is unset → **demo markets** (public + 3 private).
-- Private demo invites e.g. `NOVA-TEAM01`, `NOVA-XLM99`, `NOVA-DISC7`.
+- Private demo invites e.g. `NOVA-TEAM01`, `NOVA-LAGOS99`, `NOVA-DISC7`.
 
 ### Design / brand (current UI)
 - Black background (`#000`) + yellow accent (`#FDDA24`) — Stellar-gold feel, not Avalanche red.

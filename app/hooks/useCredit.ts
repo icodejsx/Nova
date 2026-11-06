@@ -1,22 +1,23 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import {
-  CREDIT_KEY,
-  parseCredit,
-  subscribeCredit,
-  type CreditState,
-} from "@/app/lib/roqqu/credit";
+  getAccountState,
+  getServerAccountState,
+  subscribeAccountState,
+  type AccountState,
+} from "@/app/lib/account-client";
 
-const getRaw = () => localStorage.getItem(CREDIT_KEY) ?? "";
-
-/** Full Nova credit state (balance + activity), live-updating. */
-export function useCreditState(): CreditState {
-  const raw = useSyncExternalStore(subscribeCredit, getRaw, () => "");
-  return useMemo(() => parseCredit(raw || null), [raw]);
+/** The signed-in user's account (balance, wallet ID, activity), live-updating. */
+export function useAccount(): AccountState {
+  return useSyncExternalStore(
+    subscribeAccountState,
+    getAccountState,
+    getServerAccountState
+  );
 }
 
 /** Nova balance (USD-equivalent) funded via Roqqu. */
 export function useCredit(): number {
-  return useCreditState().balance;
+  return useAccount().balance;
 }

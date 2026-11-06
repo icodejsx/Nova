@@ -16,7 +16,7 @@ export function CopyAddress({ address }: { address: string }) {
       type="button"
       onClick={copy}
       className="font-mono-nums text-[11px] text-dim hover:text-foreground transition-colors focus-ring rounded"
-      aria-label="Copy contract address"
+      aria-label="Copy market ID"
     >
       {copied
         ? "COPIED"

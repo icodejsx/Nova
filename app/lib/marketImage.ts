@@ -108,6 +108,7 @@ const SUBJECTS: [RegExp, MarketImage][] = [
   // The optional "US" prefix is consumed here so this wins over the US flag
   [/\b(?:us\s+)?federal reserve\b|\bthe fed\b|\bfomc\b/i, logo("federalreserve.gov")],
   [/\bdangote\b/i, logo("dangote.com")],
+  [/\bnaira\b|\bcbn\b/i, flag("ng")],
   [/\bbank of england\b/i, logo("bankofengland.co.uk")],
   [/\bs&p(?: 500)?\b|\bstandard & poor/i, logo("spglobal.com")],
   [/\bgold\b/i, logo("gold.org")],

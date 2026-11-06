@@ -29,7 +29,7 @@ const RAW: Omit<MarketData, "category">[] = [
   },
   {
     id: "2",
-    question: "Will Stellar network TPS exceed 5,000 sustained this quarter?",
+    question: "Will Nigeria's inflation rate fall below 15% by December 2026?",
     endTime: daysFromNow(45),
     resolved: false,
     outcome: false,
@@ -69,7 +69,7 @@ const RAW: Omit<MarketData, "category">[] = [
   },
   {
     id: "6",
-    question: "Will USDC circulating supply on Stellar exceed $500M this year?",
+    question: "Will the naira close below ₦1,400 per US dollar by December 31, 2026?",
     endTime: daysFromNow(120),
     resolved: false,
     outcome: false,
@@ -119,7 +119,7 @@ const RAW: Omit<MarketData, "category">[] = [
   },
   {
     id: "11",
-    question: "Did XLM close above $0.50 on September 1, 2026?",
+    question: "Did Ethereum close above $5,000 on September 1, 2026?",
     endTime: daysAgo(5),
     resolved: true,
     outcome: false,
@@ -149,7 +149,7 @@ const RAW: Omit<MarketData, "category">[] = [
   },
   {
     id: "14",
-    question: "Will a US presidential candidate withdraw before Nov 2028?",
+    question: "Will Nigeria's 2027 presidential election hold on the scheduled date?",
     endTime: daysFromNow(700),
     resolved: false,
     outcome: false,
@@ -159,7 +159,7 @@ const RAW: Omit<MarketData, "category">[] = [
   },
   {
     id: "15",
-    question: "Will Spotify hit 300M paid subscribers in 2026?",
+    question: "Will the next BBNaija season premiere before December 2026?",
     endTime: daysFromNow(180),
     resolved: false,
     outcome: false,
@@ -182,7 +182,7 @@ const RAW: Omit<MarketData, "category">[] = [
   },
   {
     id: "17",
-    question: "Syndicate: Will XLM flip into the top-10 by market cap this year?",
+    question: "Syndicate: Will Solana flip into the top-5 by market cap this year?",
     endTime: daysFromNow(100),
     resolved: false,
     outcome: false,
@@ -190,7 +190,7 @@ const RAW: Omit<MarketData, "category">[] = [
     totalNo: parseUsdc("450.00"),
     creator: CREATOR,
     isPrivate: true,
-    inviteCode: "NOVA-XLM99",
+    inviteCode: "NOVA-LAGOS99",
   },
   {
     id: "18",

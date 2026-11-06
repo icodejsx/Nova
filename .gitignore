@@ -43,3 +43,6 @@ next-env.d.ts
 # Soroban
 contracts/target/
 .env.local
+
+# Nova local account data
+.data/

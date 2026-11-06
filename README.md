@@ -47,6 +47,8 @@ Nova uses the [Roqqu RAS API](https://roqqu-api-services.gitbook.io/ras) as its 
 
 **Simulation mode (default for the hackathon):** with `ROQQU_MODE=mock` (or no key) every flow runs against a server-side simulation that uses Roqqu's documented request/response shapes: a simulated hosted checkout at `/fund/checkout/[ref]` (deposit addresses + "I've sent the payment" → same code path as the `payment_link_completed` webhook), simulated prices/NGN rate, treasury wallet, and queued → on-chain-confirmed cash outs. Everything is labelled "simulated" in the UI.
 
+**Accounts & sign-in:** users sign in with their Roqqu email and a one-time code (`/signin`). The server keeps their wallet ID, balance and activity (`app/lib/auth/*`, `.data/accounts.json`), credits deposits when Roqqu's webhook confirms them, and debits bets and cash outs, so users return to the same account on any device. In sandbox mode the code is shown on screen; set `RESEND_API_KEY` + `AUTH_FROM_EMAIL` for real email, and `AUTH_SECRET` in production. The JSON file store is for a single server; use a database before real money moves.
+
 **Going live:** remove `ROQQU_MODE=mock`, set `ROQQU_API_KEY` (and `ROQQU_ENV=staging|live`) in `.env.local`, set `NEXT_PUBLIC_APP_URL` to your https origin, and register `/api/roqqu/webhook` in the Roqqu console. Roqqu doesn't support Stellar assets, so it funds a Nova balance; the Roqqu → Stellar USDC treasury bridge is post-hackathon work.
 
 ## Stack

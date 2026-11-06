@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /**
- * Nova — plain black + Stellar yellow touches
+ * Nova — plain black with yellow accents
  */
 :root {
   --background: #000000;
@@ -87,15 +87,6 @@ body {
   border: 1px solid var(--color-border-subtle);
 }
 
-@keyframes ticker {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-.animate-ticker {
-  animation: ticker 30s linear infinite;
-}
-
 .font-mono-nums {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -134,8 +125,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
-  .animate-shimmer,
-  .animate-ticker {
+  .animate-shimmer {
     animation: none;
   }
 }
