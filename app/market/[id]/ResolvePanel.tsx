@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useWallet } from "@/app/providers";
+import { LivePrice } from "@/app/components/LivePrice";
 
 export function ResolvePanel({
   marketId,
+  question,
   endTime,
   resolved,
   outcome,
@@ -12,6 +14,7 @@ export function ResolvePanel({
   onUpdate,
 }: {
   marketId: string;
+  question: string;
   endTime: bigint;
   resolved: boolean;
   outcome: boolean;
@@ -98,6 +101,9 @@ export function ResolvePanel({
             Resolution is final and determines every payout. Verify the result
             from a reliable source before choosing an outcome.
           </p>
+          <div className="mb-4">
+            <LivePrice question={question} label="Price evidence" />
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"

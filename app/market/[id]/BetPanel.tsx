@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ConnectWallet } from "@/app/components/ConnectWallet";
 import { useWallet } from "@/app/providers";
+import { useCredit } from "@/app/hooks/useCredit";
+import { spendCredit } from "@/app/lib/roqqu/credit";
 import { previewNetPayout } from "@/app/lib/odds";
 import { formatUsdc, toUsdcNumber } from "@/app/lib/types";
 
@@ -27,6 +30,7 @@ export function BetPanel({
   onBetPlaced: () => void;
 }) {
   const { isConnected } = useWallet();
+  const credit = useCredit();
   const searchParams = useSearchParams();
   const [side, setSide] = useState<"yes" | "no">(
     searchParams.get("side") === "no" ? "no" : "yes"
@@ -56,6 +60,18 @@ export function BetPanel({
   function placeBet() {
     if (!amountIsValid) {
       setValidationError("Enter a valid USDC amount greater than zero.");
+      return;
+    }
+    // Stake comes from the Nova balance funded through Roqqu.
+    if (
+      !spendCredit(numericAmount, {
+        type: "bet",
+        label: `${side.toUpperCase()} · market #${marketId}`,
+      })
+    ) {
+      setValidationError(
+        `Insufficient Nova balance ($${credit.toFixed(2)}). Add funds with Roqqu to trade.`
+      );
       return;
     }
     setValidationError("");
@@ -161,6 +177,18 @@ export function BetPanel({
         </div>
 
         <div className="rounded-lg bg-background/70 border border-border-subtle p-3 mb-4 space-y-2">
+          <div className="flex justify-between items-center text-[11px]">
+            <span className="text-muted">Nova balance</span>
+            <span className="flex items-center gap-2">
+              <span className="font-mono-nums text-accent">${credit.toFixed(2)}</span>
+              <Link
+                href="/fund"
+                className="text-[10px] text-accent hover:underline rounded focus-ring"
+              >
+                Add funds
+              </Link>
+            </span>
+          </div>
           <div className="flex justify-between text-[11px]">
             <span className="text-muted">Estimated return</span>
             <span className={side === "yes" ? "text-yes" : "text-no"}>

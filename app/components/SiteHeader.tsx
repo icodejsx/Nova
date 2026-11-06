@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useIsCreator } from "@/app/hooks/useIsCreator";
+import { useCredit } from "@/app/hooks/useCredit";
 import { ConnectWallet } from "./ConnectWallet";
 import { Logo } from "./Logo";
 
 export function SiteHeader({ breadcrumb }: { breadcrumb?: ReactNode }) {
   const { isCreator } = useIsCreator();
+  const credit = useCredit();
   const pathname = usePathname();
   const onMarkets = pathname === "/" || pathname.startsWith("/market");
 
@@ -52,6 +54,14 @@ export function SiteHeader({ breadcrumb }: { breadcrumb?: ReactNode }) {
             <span className="h-1.5 w-1.5 rounded-full bg-accent" />
             Testnet
           </span>
+          <Link
+            href="/fund"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/5 px-2.5 py-1.5 font-mono-nums text-[11px] text-accent hover:bg-accent/10 transition-colors focus-ring"
+            title="Fund your balance with Roqqu"
+          >
+            ${credit.toFixed(2)}
+            <span className="text-[10px] text-muted">+ Add</span>
+          </Link>
           {isCreator && (
             <Link
               href="/create"

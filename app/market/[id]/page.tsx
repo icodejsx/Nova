@@ -11,6 +11,7 @@ import { CopyAddress } from "@/app/components/CopyAddress";
 import { Ticker } from "@/app/components/Ticker";
 import { PrivateBadge } from "@/app/components/PrivateBadge";
 import { InviteGate } from "@/app/components/InviteGate";
+import { LivePrice } from "@/app/components/LivePrice";
 import { useMarket, useMarkets } from "@/app/hooks/useMarkets";
 import { useWallet } from "@/app/providers";
 import { CONTRACT_ID, NETWORK } from "@/app/config/network";
@@ -187,6 +188,7 @@ function MarketBody({ id }: { id: string }) {
                 {formatTimeLeft(market.endTime, nowSec)}
               </span>
             )}
+            <LivePrice question={market.question} />
           </div>
 
           <div className="flex items-start gap-4 max-w-3xl mb-7">
@@ -344,6 +346,7 @@ function MarketBody({ id }: { id: string }) {
           </Suspense>
           <ResolvePanel
             marketId={market.id}
+            question={market.question}
             endTime={market.endTime}
             resolved={market.resolved}
             outcome={market.outcome}

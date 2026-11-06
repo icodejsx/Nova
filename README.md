@@ -34,6 +34,21 @@ Open [http://localhost:3000](http://localhost:3000). Without `NEXT_PUBLIC_CONTRA
 npm run seed
 ```
 
+## Roqqu integration (hackathon)
+
+Nova uses the [Roqqu RAS API](https://roqqu-api-services.gitbook.io/ras) as its fiat/crypto on-ramp. All calls are server-side (`app/api/roqqu/*`, `app/lib/roqqu/server.ts`); the secret key never reaches the browser.
+
+| Feature | Roqqu endpoints | Where |
+|---|---|---|
+| Fund Nova balance (NGN / USD) | `POST /payment-links` + encrypted payment-link webhooks (`aes-256-ctr`) | `/fund`, `/api/roqqu/fund`, `/api/roqqu/webhook` |
+| Live prices + NGN rates | `GET /tokens`, `GET /rates` | market page chip, `/api/roqqu/prices` |
+| Treasury balances + history | `POST /balances`, `POST /history` | `/fund` sidebar, `/api/roqqu/wallet` |
+| Cash out winnings in USDT (TRC20 / BEP20) | `POST /wallets/send`, `GET /transaction/refId/:refid`, fee quote | `/fund` cash-out card, `/api/roqqu/send` |
+
+**Simulation mode (default for the hackathon):** with `ROQQU_MODE=mock` (or no key) every flow runs against a server-side simulation that uses Roqqu's documented request/response shapes: a simulated hosted checkout at `/fund/checkout/[ref]` (deposit addresses + "I've sent the payment" → same code path as the `payment_link_completed` webhook), simulated prices/NGN rate, treasury wallet, and queued → on-chain-confirmed cash outs. Everything is labelled "simulated" in the UI.
+
+**Going live:** remove `ROQQU_MODE=mock`, set `ROQQU_API_KEY` (and `ROQQU_ENV=staging|live`) in `.env.local`, set `NEXT_PUBLIC_APP_URL` to your https origin, and register `/api/roqqu/webhook` in the Roqqu console. Roqqu doesn't support Stellar assets, so it funds a Nova balance; the Roqqu → Stellar USDC treasury bridge is post-hackathon work.
+
 ## Stack
 
 | Layer | Choice |
